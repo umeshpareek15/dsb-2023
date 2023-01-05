@@ -150,6 +150,6 @@ rmarkdown::render("22-10_dsb-project-description.Rmd", "all")
 
 *Git and GitHub*
 
-As you should submit your work to my Github account, you can learn how to do that by following the instructions of this repository: \url{https://github.com/firstcontributions/first-contributions}
+As you should submit your work to my Github account, you can learn how to do that by following the instructions of this repository: [https://github.com/firstcontributions/first-contributions](https://github.com/firstcontributions/first-contributions)
 
 # Literature
