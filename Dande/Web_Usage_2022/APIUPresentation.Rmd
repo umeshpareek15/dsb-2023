@@ -1,0 +1,176 @@
+---
+title: "Analysis of API Usage by DHL Customers Annually"
+author: "Aditya Dande"
+date: "2022-12-15"
+output: slidy_presentation
+---
+
+## Introduction
+
+- What is API?
+- The purpose of this project is to find API usage of DHL Product called "myAct".
+- Customer sends Request to track their shipment status.
+- Managing the load of these Request by knowing Repetitive Requests.
+
+
+R markdown template from github
+explain more for 10 columns
+explain data in detail(username why duplicates)
+check whatsApp for Github upload
+
+
+
+## What is the data
+
+- The Website generate Excels which IT Team sends to me. 
+- The Excel sheet contains monthly request sent by customers.
+- The data contains info regarding 
+  - who sent the request
+  - what they wanted to see
+  - how many times they requested
+  - how much time it required to for them to get that info.
+
+ 
+## Structure of the Data
+
+:::::: {.columns}
+::: {.column}
+All downloaded Excels are stored in one Folder
+
+```{r ,fig.width = 12, fig.height= 5, echo = FALSE}
+library(knitr) 
+# All defaults
+include_graphics('https://raw.githubusercontent.com/adityadande/DataSciene/7d3ea47bcf1be4c391aca35fcb73d3f2d9ec6313/DatainFolderG.png')
+
+```
+:::
+
+::: {.column}
+The data in each excel contains 10 columns 
+
+```{r ,fig.width = 12, fig.height= 5, echo = FALSE}
+library(knitr) 
+# All defaults
+include_graphics('https://raw.githubusercontent.com/adityadande/DataSciene/7d3ea47bcf1be4c391aca35fcb73d3f2d9ec6313/DatainExcelG.png')
+
+```
+:::
+
+
+
+::::::
+
+
+## Structure of the Data
+
+:::::: {.columns}
+::: {.column}
+Code in R
+
+```
+# Import those files in R
+webUsageExcelsLists <- list.files(pattern = ".xls")
+
+# Get the data of these Excels Files
+webUsageDataLists = lapply(webUsageExcelsLists, function(i){
+  x = read_excel(i, sheet=1)
+  x <- x[,c(2,4,5,6,7,10)]
+  x$file = i
+  x
+})
+# Binding the data from all the Excels
+allUsageData = do.call("rbind.data.frame",webUsageDataLists)
+
+```
+:::
+
+::: {.column}
+Final Excel
+
+```{r ,echo = FALSE}
+library(knitr) 
+# All defaults
+include_graphics('https://raw.githubusercontent.com/adityadande/DataSciene/7d3ea47bcf1be4c391aca35fcb73d3f2d9ec6313/FinalG.png')
+
+```
+:::
+
+::::::
+
+
+## Avg. Response Times for Year 2022
+
+```{r setup,echo = FALSE, warning=FALSE, fig.align="center", fig.width = 12, fig.height= 5}
+
+library(readxl)
+
+library(RCurl)
+x <- getURL("https://raw.githubusercontent.com/adityadande/DataSciene/main/yearBaseAvgAPIResponse.csv")
+graphData <- read.csv(text = x)
+
+library(ggplot2)
+library(magrittr)
+
+  graphData %>%
+  dplyr::arrange(graphData, desc(graphData$AVG_RESPONSE_TIME)) %>%    
+  dplyr::mutate(name=factor(graphData$OPERATION....usageResponseTimeOperationBased.OPERATION, levels=graphData$OPERATION....usageResponseTimeOperationBased.OPERATION)) %>%  
+  ggplot( aes(x=graphData$OPERATION....usageResponseTimeOperationBased.OPERATION, y=graphData$AVG_RESPONSE_TIME)) +
+    geom_segment( aes(xend=graphData$OPERATION....usageResponseTimeOperationBased.OPERATION, yend=0)) +
+    geom_point( size=4, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    xlab("OPERATIONS") +
+    ylab("AVG RESPONSE TIME (sec)")  +
+    geom_text(aes(label = signif(graphData$AVG_RESPONSE_TIME, digits = 5)), nudge_y = 0.1, color="blue")
+```
+
+\newpage
+
+## User Data Analysis
+
+```{r,echo = FALSE}
+
+library(RCurl)
+x <- getURL("https://raw.githubusercontent.com/adityadande/DataSciene/main/allAPIResponse.csv")
+apiData <- read.csv(text = x)
+
+# Username vs Counter
+agg_tbl <- apiData %>% dplyr::group_by(USERNAME) %>% dplyr::summarise(sum(COUNTER))
+agg_tbl <- agg_tbl[order(-agg_tbl$`sum(COUNTER)`), ]
+iris2 <- head(agg_tbl)
+
+# Username vs No response
+agg_tb2 <- apiData %>% dplyr::group_by(USERNAME) %>% dplyr::summarise(sum(NORESULTS))
+agg_tb2 <- agg_tb2[order(-agg_tb2$`sum(NORESULTS)`), ]
+iris3 <- head(agg_tb2)
+
+
+knitr::kable( 
+  list(
+    iris2, iris3
+    ), align = "lccrr", caption = "Users with the most API request & result", digits = 10, format.args = list(big.mark = ",",
+  scientific = FALSE), booktabs = TRUE, valign = 't')
+
+
+# NORESULT / COUNTER
+apiData$NORESULT_AVG <- apiData$NORESULTS  / apiData$COUNTER
+agg_tb3 <- apiData[,c(1,2,3,4,8)]
+agg_tb3 <- agg_tb3 %>% dplyr::group_by(USERNAME) %>%       
+    dplyr::summarise(sum(NORESULT_AVG)) 
+
+iris4 <- head(agg_tb3[order(-agg_tb3$`sum(NORESULT_AVG)`),])
+
+# BLOCKED / COUNTER
+apiData$BLOCKED_AVG <- apiData$BLOCKED  / apiData$COUNTER
+agg_tb4 <- apiData[,c(1,2,3,5,9)]
+agg_tb4 <- agg_tb4 %>% dplyr::group_by(USERNAME) %>%       
+    dplyr::summarise(sum(BLOCKED_AVG)) 
+
+iris5 <- head(agg_tb4[order(-agg_tb4$`sum(BLOCKED_AVG)`),])
+
+knitr::kable( 
+  list(
+    iris5, iris4
+    ), align = "lccrr", caption = "Avg. Most NO RESULT & BLOCKED per COUNTER For each Customer Analysis", digits = 10, format.args = list(big.mark = ",",
+  scientific = FALSE), booktabs = TRUE, valign = 't')
+```
